@@ -1,0 +1,35 @@
+<h1 class="text-center">Detalle de Compra</h1>
+<p><strong>ID de Venta:</strong> {{ venta.id }}</p>
+<p><strong>Usuario:</strong> {{ venta.usuario.username }}</p>
+<p><strong>Fecha:</strong> {{ venta.fecha_venta }}</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+            <th>Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for detalle in venta.detalles.all %}
+        <tr>
+            <td>{{ detalle.producto.nombre }}</td>
+            <td>{{ detalle.cantidad }}</td>
+            <td>S/. {{ detalle.precio_unitario|floatformat:2 }}</td>
+            <td>S/. {{ detalle.subtotal|floatformat:2 }}</td>
+            <td>
+                <!-- Botón para abrir el modal de reseña -->
+                <button 
+                    class="btn btn-primary btn-sm" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalResena{{ detalle.producto.id }}">
+                    Escribir Reseña
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

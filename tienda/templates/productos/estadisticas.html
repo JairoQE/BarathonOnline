@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas de Productos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h1 class="text-center">Estadísticas de Productos</h1>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <canvas id="productosMenorStock"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="ventasPorCategoria"></canvas>
+            </div>
+        </div>
+
+        <!-- Botón para volver al Home del Admin -->
+        <div class="text-center mt-4">
+            <a href="{% url 'admin_home' %}" class="btn btn-secondary">Volver al Home del Admin</a>
+        </div>
+    </div>
+
+    <script>
+        // Datos para "Productos con menor stock"
+        const menorStockCtx = document.getElementById('productosMenorStock').getContext('2d');
+        new Chart(menorStockCtx, {
+            type: 'bar',
+            data: {
+                labels: [{% for producto in productos_bajo_stock %}"{{ producto.nombre }}",{% endfor %}],
+                datasets: [{
+                    label: 'Stock',
+                    data: [{% for producto in productos_bajo_stock %}{{ producto.stock }},{% endfor %}],
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Datos para "Ventas totales por categoría"
+        const ventasCategoriaCtx = document.getElementById('ventasPorCategoria').getContext('2d');
+        new Chart(ventasCategoriaCtx, {
+            type: 'pie',
+            data: {
+                labels: [{% for categoria in ventas_por_categoria %}"{{ categoria.categoria__nombre }}",{% endfor %}],
+                datasets: [{
+                    data: [{% for categoria in ventas_por_categoria %}{{ categoria.total_stock }},{% endfor %}],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

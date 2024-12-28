@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barathon</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        #carritoLateral {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            background-color: #fff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+            transition: right 0.3s ease-in-out;
+            z-index: 1050;
+        }
+
+        #carritoLateral.active {
+            right: 0;
+        }
+
+        .btn-agotado {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .star-rating .fa-star {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container mt-3">
+        <!-- Barra de navegación -->
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <a href="/" class="navbar-brand"><strong>Barathon</strong></a>
+            </div>
+            <div class="d-flex align-items-center">
+                <!-- Buscador -->
+                <form method="GET" action="" class="d-flex me-3">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar productos..." value="{{ query|default_if_none:'' }}">
+                    <button type="submit" class="btn btn-primary ms-2">Buscar</button>
+                </form>
+                <!-- Ícono del carrito -->
+                <a href="#" class="me-3" id="abrirCarrito">
+                    <i class="fas fa-shopping-cart fa-lg"></i>
+                </a>
+                {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle text-primary" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ user.username }} 
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'historial_compras' %}">Mis Compras</a></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}">Cerrar sesión</a></li>
+                    </ul>
+                </div>
+                
+                {% else %}
+                    <a href="{% url 'login' %}" class="me-3">Iniciar sesión</a>
+                    <a href="{% url 'register' %}">Registrarse</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="mt-5">
+            <h1 class="text-center">Bienvenido a Barathon</h1>
+            <p class="text-center">Explora nuestros productos.</p>
+        </div>
+         <!-- Filtros -->
+    <div class="mt-4">
+        <form method="GET" action="" class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <label for="categoria" class="form-label">Categoría</label>
+                <select name="categoria" id="categoria" class="form-select">
+                    <option value="">Todas las categorías</option>
+                    {% for categoria in categorias %}
+                        <option value="{{ categoria.id }}" {% if categoria.id|stringformat:"s" == categoria_id %}selected{% endif %}>
+                            {{ categoria.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="precio" class="form-label">Rango de precios</label>
+                <select name="precio" id="precio" class="form-select">
+                    <option value="">Todos los precios</option>
+                    <option value="0-50">S/. 0 - S/. 50</option>
+                    <option value="50-100">S/. 50 - S/. 100</option>
+                    <option value="100-200">S/. 100 - S/. 200</option>
+                    <option value="200">Más de S/. 200</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="ordenar" class="form-label">Ordenar por</label>
+                <select name="ordenar" id="ordenar" class="form-select">
+                    <option value="">Sin ordenar</option>
+                    <option value="nombre">Nombre</option>
+                    <option value="-nombre">Nombre (descendente)</option>
+                    <option value="precio">Precio (ascendente)</option>
+                    <option value="-precio">Precio (descendente)</option>
+                </select>
+            </div>
+            <div class="col-md-12 text-center">
+                <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+            </div>
+        </form>
+    </div>
+
+        <!-- Productos destacados -->
+        <div class="row mt-4">
+            {% for producto in productos %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" class="card-img-top ver-detalle" data-id="{{ producto.id }}" alt="{{ producto.nombre }}" style="height: 200px; object-fit: cover; cursor: pointer;">
+                    {% else %}
+                        <img src="https://via.placeholder.com/200" class="card-img-top ver-detalle" data-id="{{ producto.id }}" alt="Sin imagen disponible" style="cursor: pointer;">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ producto.nombre }}</h5>
+                        <p class="card-text">S/. {{ producto.precio|floatformat:2 }}</p>
+                        <button type="button" class="btn btn-info w-100 ver-detalle" data-id="{{ producto.id }}" data-bs-toggle="modal" data-bs-target="#detalleProductoModal">Ver detalles</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+<!-- Modal para Detalles del Producto -->
+<div class="modal fade" id="detalleProductoModal" tabindex="-1" aria-labelledby="detalleProductoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detalleProductoLabel">Detalle del Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="detalleProductoContenido">
+                <p>Cargando detalles del producto...</p>
+            </div>
+            <div class="modal-footer">
+                <form id="formAgregarCarrito" method="POST" action="#">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Agregar al carrito</button>
+                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- Carrito Lateral -->
+<div id="carritoLateral">
+    <div class="p-3">
+        <button id="cerrarCarrito" class="btn btn-sm btn-danger float-end">&times;</button>
+        <h5>Mi Carrito</h5>
+        <hr>
+        {% if carrito %}
+            <ul class="list-group">
+                {% for producto_id, item in carrito.items %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ item.nombre }}</strong><br>
+                        Cantidad: {{ item.cantidad }}
+                        <br>
+                        Subtotal: S/. {{ item.subtotal|floatformat:2 }}
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-danger btn-sm ms-2 eliminar-item" data-producto-id="{{ producto_id }}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            <hr>
+            <h6>Total: S/. {{ total|floatformat:2 }}</h6>
+            <a href="{% url 'ver_carrito' %}" class="btn btn-primary w-100 mt-3">Ver Carrito Completo</a>
+            <a href="{% url 'confirmar_compra' %}" class="btn btn-success w-100 mt-2">Proceder al Pago</a>
+        {% else %}
+            <p>Tu carrito está vacío.</p>
+        {% endif %}
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Variables de elementos
+    const abrirCarrito = document.getElementById('abrirCarrito');
+    const cerrarCarrito = document.getElementById('cerrarCarrito');
+    const carritoLateral = document.getElementById('carritoLateral');
+    const eliminarBtns = document.querySelectorAll('.eliminar-item');
+
+    // Abrir carrito lateral
+    abrirCarrito.addEventListener('click', () => {
+        carritoLateral.classList.add('active');
+    });
+
+    // Cerrar carrito lateral
+    cerrarCarrito.addEventListener('click', () => {
+        carritoLateral.classList.remove('active');
+    });
+
+    // Eliminar producto del carrito
+    eliminarBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            const productoId = this.getAttribute('data-producto-id');
+            fetch(`/carrito/eliminar/${productoId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}', // Agrega el token CSRF
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Recargar para actualizar la barra lateral
+                    location.reload();
+                } else {
+                    alert('Hubo un error al eliminar el producto.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Hubo un error al procesar tu solicitud.');
+            });
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalContenido = document.getElementById('detalleProductoContenido');
+        const formAgregarCarrito = document.getElementById('formAgregarCarrito');
+
+        document.querySelectorAll('.ver-detalle').forEach(boton => {
+            boton.addEventListener('click', () => {
+                const productoId = boton.getAttribute('data-id');
+
+                // Actualiza la acción del formulario para agregar al carrito
+                formAgregarCarrito.action = `/carrito/agregar/${productoId}/`;
+
+                // Realiza una solicitud para obtener detalles del producto
+                fetch(`/api/productos/${productoId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Llena el contenido del modal con los datos recibidos
+                        modalContenido.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <img src="${data.imagen}" alt="${data.nombre}" class="img-fluid">
+                                </div>
+                                <div class="col-md-6">
+                                    <h4>${data.nombre}</h4>
+                                    <p><strong>Precio:</strong> S/. ${data.precio}</p>
+                                    <p>${data.descripcion}</p>
+                                    <p><strong>Stock disponible:</strong> ${data.stock}</p>
+                                </div>
+                            </div>
+                            <hr>
+                            <h5>Reseñas de clientes</h5>
+                            <div>
+                                ${
+                                    data.reseñas.length > 0
+                                    ? data.reseñas.map(reseña => `
+                                        <div class="border p-2 mb-2">
+                                            <strong>${reseña.usuario}</strong> - ${'⭐'.repeat(reseña.estrellas)}<br>
+                                            <p>${reseña.comentario}</p>
+                                        </div>
+                                    `).join('')
+                                    : '<p>No hay reseñas para este producto.</p>'
+                                }
+                            </div>
+                            <hr>
+                            ${
+                                data.usuario_compro_producto
+                                ? `
+                                <h5>Deja tu valoración</h5>
+                                <form action="/productos/${productoId}/reseña/" method="POST">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="${data.csrf_token}">
+                                    <div class="mb-3">
+                                        <label for="estrellas" class="form-label">Estrellas</label>
+                                        <select name="estrellas" id="estrellas" class="form-select">
+                                            <option value="1">1 estrella</option>
+                                            <option value="2">2 estrellas</option>
+                                            <option value="3">3 estrellas</option>
+                                            <option value="4">4 estrellas</option>
+                                            <option value="5">5 estrellas</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="comentario" class="form-label">Comentario</label>
+                                        <textarea name="comentario" id="comentario" rows="3" class="form-control"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Enviar reseña</button>
+                                </form>
+                                `
+                                : '<p class="text-muted">Solo los usuarios que han comprado este producto pueden dejar una reseña.</p>'
+                            }
+                        `;
+                    })
+                    .catch(error => {
+                        modalContenido.innerHTML = `<p>Error al cargar los detalles del producto.</p>`;
+                        console.error(error);
+                    });
+            });
+        });
+    });
+</script>
+
+
+</body>
+</html>

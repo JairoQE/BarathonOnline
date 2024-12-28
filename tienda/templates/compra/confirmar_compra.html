@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Compra</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h2 class="text-center">Confirmar Compra</h2>
+
+        <!-- Detalles de la compra -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>Resumen de la compra</h4>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for producto_id, item in carrito.items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ item.nombre }}</strong><br>
+                            Cantidad: {{ item.cantidad }}
+                        </div>
+                        <span>S/. {{ item.precio|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <h5>Total:</h5>
+                    <h5>S/. {{ total|floatformat:2 }}</h5>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selección del tipo de pago -->
+        <div class="mt-5">
+            <h4>Seleccionar el tipo de pago:</h4>
+            <div class="row mt-4 justify-content-center">
+                <div class="col-md-6">
+                    <button class="btn btn-outline-primary w-100 mb-3" data-bs-toggle="modal" data-bs-target="#modalTarjetaCredito">
+                        <div class="d-flex align-items-center">
+                            <img src="https://www.visa.com.pe/dam/VCOM/regional/lac/SPA/Default/Pay%20With%20Visa/Find%20a%20Card/Credit%20cards/Classic/visa_classic_card_400x225.jpg" alt="Tarjeta de Crédito" class="me-3" style="width: 80px; height: auto;">
+                            <strong>Tarjeta de crédito</strong>
+                        </div>
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-outline-secondary w-100 mb-3" data-bs-toggle="modal" data-bs-target="#modalTarjetaDebito">
+                        <div class="d-flex align-items-center">
+                            <img src="https://www.bn.com.pe/noticias/imagenes/2019/2510201-tarjeta-debito.jpg" alt="Tarjeta de Débito" class="me-3" style="width: 80px; height: auto;">
+                            <strong>Tarjeta de débito</strong>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Tarjeta de Crédito -->
+    <div class="modal fade" id="modalTarjetaCredito" tabindex="-1" aria-labelledby="modalTarjetaCreditoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'procesar_pago' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="metodo_pago" value="tarjeta_credito">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTarjetaCreditoLabel">Pago con tarjeta de crédito</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="correo" class="form-label">Correo electrónico</label>
+                            <input type="email" class="form-control" id="correo" name="correo" placeholder="tuemail@ejemplo.com" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Información de la tarjeta</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="numero_tarjeta" name="numero_tarjeta" placeholder="1234 1234 1234 1234" maxlength="19" required>
+                                <span class="input-group-text">
+                                    <img src="https://www.visa.com.pe/dam/VCOM/regional/lac/SPA/Default/Pay%20With%20Visa/Find%20a%20Card/Credit%20cards/Classic/visa_classic_card_400x225.jpg" alt="Tarjetas aceptadas" style="width: 50px;">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="fecha_expiracion" class="form-label">Fecha de expiración</label>
+                                <input type="text" class="form-control" id="fecha_expiracion" name="fecha_expiracion" placeholder="MM / AA" maxlength="7" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="cvv" class="form-label">CVC</label>
+                                <input type="text" class="form-control" id="cvv" name="cvv" placeholder="CVC" maxlength="3" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="nombre_tarjeta" class="form-label">Nombre del titular de la tarjeta</label>
+                            <input type="text" class="form-control" id="nombre_tarjeta" name="nombre_tarjeta" placeholder="Nombre completo" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{% url 'ver_carrito' %}" class="btn btn-danger">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Pagar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Tarjeta de Débito -->
+    <div class="modal fade" id="modalTarjetaDebito" tabindex="-1" aria-labelledby="modalTarjetaDebitoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'procesar_pago' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="metodo_pago" value="tarjeta_debito">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTarjetaDebitoLabel">Pago con tarjeta de débito</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Número de tarjeta</label>
+                            <input type="text" class="form-control" id="numero_tarjeta_debito" name="numero_tarjeta" placeholder="1234 1234 1234 1234" maxlength="19" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="fecha_expiracion_debito" class="form-label">Fecha de expiración</label>
+                                <input type="text" class="form-control" id="fecha_expiracion_debito" name="fecha_expiracion" placeholder="MM / AA" maxlength="7" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="cvv_debito" class="form-label">CVC</label>
+                                <input type="text" class="form-control" id="cvv_debito" name="cvv" placeholder="CVC" maxlength="3" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{% url 'ver_carrito' %}" class="btn btn-danger">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Pagar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
