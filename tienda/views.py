@@ -406,41 +406,80 @@ def procesar_pago(request):
         messages.error(request, "El carrito está vacío. Agrega productos antes de proceder al pago.")
         return redirect('ver_carrito')
 
-    # Crear una nueva venta
-    venta = Venta.objects.create(usuario=request.user, fecha_venta=now(), total_venta=0)
-
     total_venta = 0
-    for producto_id, item in carrito.items():
-        producto = Producto.objects.get(id=producto_id)
-        cantidad = item['cantidad']
-        precio_unitario = producto.precio
-        subtotal = cantidad * precio_unitario
+    detalles = []
+    productos_no_procesados = {}
 
-        # Crear detalle de la venta
-        DetalleVenta.objects.create(
-            venta=venta,
-            producto=producto,
-            cantidad=cantidad,
-            precio_unitario=precio_unitario,
-            subtotal=subtotal
-        )
+    try:
+        # Verificar stock y preparar los productos procesables
+        for producto_id, item in list(carrito.items()):
+            producto = Producto.objects.get(id=producto_id)
+            cantidad = item['cantidad']
 
-        # Actualizar el stock del producto
-        producto.stock -= cantidad
-        producto.save()
+            if producto.stock >= cantidad:
+                precio_unitario = producto.precio
+                subtotal = cantidad * precio_unitario
+                total_venta += subtotal
 
-        total_venta += subtotal
+                detalles.append({
+                    'producto': producto,
+                    'cantidad': cantidad,
+                    'precio_unitario': precio_unitario,
+                    'subtotal': subtotal,
+                })
+            else:
+                # Agregar a la lista de productos no procesados
+                productos_no_procesados[producto_id] = {
+                    'nombre': producto.nombre,
+                    'cantidad_disponible': producto.stock,
+                    'cantidad_solicitada': cantidad,
+                }
 
-    # Actualizar el total de la venta
-    venta.total_venta = total_venta
-    venta.save()
+        if not detalles:
+            messages.error(request, "Ninguno de los productos tiene suficiente stock para completar la compra.")
+            return redirect('ver_carrito')
 
-    # Limpiar el carrito
-    del request.session['carrito']
-    request.session.modified = True
+        # Crear la venta y procesar los productos válidos
+        with transaction.atomic():
+            venta = Venta.objects.create(usuario=request.user, fecha_venta=now(), total_venta=total_venta)
 
-    messages.success(request, f"Compra realizada exitosamente. ID de la venta: {venta.id}")
-    return redirect('detalle_compra', venta_id=venta.id)
+            for detalle in detalles:
+                DetalleVenta.objects.create(
+                    venta=venta,
+                    producto=detalle['producto'],
+                    cantidad=detalle['cantidad'],
+                    precio_unitario=detalle['precio_unitario'],
+                    subtotal=detalle['subtotal'],
+                )
+                # Reducir el stock del producto
+                detalle['producto'].stock -= detalle['cantidad']
+                detalle['producto'].save()
+
+        # Limpiar productos procesados del carrito
+        for detalle in detalles:
+            carrito.pop(str(detalle['producto'].id))
+
+        # Actualizar el carrito en la sesión
+        request.session['carrito'] = carrito
+        request.session.modified = True
+
+        # Mensajes para el usuario
+        messages.success(request, f"Compra realizada exitosamente. ID de la venta: {venta.id}")
+        if productos_no_procesados:
+            productos_faltantes = [
+                f"{detalle['nombre']} (Disponible: {detalle['cantidad_disponible']}, Solicitado: {detalle['cantidad_solicitada']})"
+                for detalle in productos_no_procesados.values()
+            ]
+            messages.warning(
+                request,
+                "Algunos productos no se pudieron procesar por falta de stock: " + ", ".join(productos_faltantes)
+            )
+
+        return redirect('detalle_compra', venta_id=venta.id)
+
+    except Exception as e:
+        messages.error(request, f"Ocurrió un error al procesar el pago: {str(e)}")
+        return redirect('ver_carrito')
 
 # Procesar pago con tarjeta
 def procesar_pago_tarjeta(request):
