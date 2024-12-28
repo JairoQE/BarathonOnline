@@ -11,10 +11,13 @@
     <div class="container mt-5">
         <h1 class="text-center">Estadísticas de Productos</h1>
 
+        <!-- Gráficos de estadísticas -->
         <div class="row mt-4">
+            <!-- Gráfico de Productos con Menor Stock -->
             <div class="col-md-6">
                 <canvas id="productosMenorStock"></canvas>
             </div>
+            <!-- Gráfico de Ventas Totales por Categoría -->
             <div class="col-md-6">
                 <canvas id="ventasPorCategoria"></canvas>
             </div>
@@ -27,37 +30,57 @@
     </div>
 
     <script>
-        // Datos para "Productos con menor stock"
+        // Configuración para "Productos con menor stock"
         const menorStockCtx = document.getElementById('productosMenorStock').getContext('2d');
         new Chart(menorStockCtx, {
             type: 'bar',
             data: {
-                labels: [{% for producto in productos_bajo_stock %}"{{ producto.nombre }}",{% endfor %}],
+                labels: [{% for producto in productos_bajo_stock %}"{{ producto.nombre }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
                 datasets: [{
-                    label: 'Stock',
-                    data: [{% for producto in productos_bajo_stock %}{{ producto.stock }},{% endfor %}],
+                    label: 'Stock Disponible',
+                    data: [{% for producto in productos_bajo_stock %}{{ producto.stock }}{% if not forloop.last %}, {% endif %}{% endfor %}],
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 }]
             },
             options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Productos con Menor Stock'
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Cantidad'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Productos'
+                        }
                     }
                 }
             }
         });
 
-        // Datos para "Ventas totales por categoría"
+        // Configuración para "Ventas totales por categoría"
         const ventasCategoriaCtx = document.getElementById('ventasPorCategoria').getContext('2d');
         new Chart(ventasCategoriaCtx, {
             type: 'pie',
             data: {
-                labels: [{% for categoria in ventas_por_categoria %}"{{ categoria.categoria__nombre }}",{% endfor %}],
+                labels: [{% for categoria in ventas_por_categoria %}"{{ categoria.categoria__nombre }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
                 datasets: [{
-                    data: [{% for categoria in ventas_por_categoria %}{{ categoria.total_stock }},{% endfor %}],
+                    data: [{% for categoria in ventas_por_categoria %}{{ categoria.total_stock }}{% if not forloop.last %}, {% endif %}{% endfor %}],
                     backgroundColor: [
                         'rgba(255, 99, 132, 0.2)',
                         'rgba(54, 162, 235, 0.2)',
@@ -78,8 +101,12 @@
             options: {
                 responsive: true,
                 plugins: {
+                    title: {
+                        display: true,
+                        text: 'Stock Total por Categoría'
+                    },
                     legend: {
-                        position: 'top',
+                        position: 'top'
                     }
                 }
             }

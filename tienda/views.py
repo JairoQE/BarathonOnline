@@ -807,9 +807,10 @@ def editar_proveedor(request, proveedor_id):
 # Eliminar proveedor
 def eliminar_proveedor(request, proveedor_id):
     proveedor = get_object_or_404(Proveedor, id=proveedor_id)
+    
     if request.method == 'POST':
         proveedor.delete()
-        messages.success(request, 'Proveedor eliminado exitosamente.')
-        return redirect('listar_proveedores')
-
+        messages.success(request, f"El proveedor {proveedor.nombre} ha sido eliminado correctamente.")
+        return redirect('listar_proveedores')  # Ajusta el nombre de la URL para listar proveedores
+    
     return render(request, 'proveedores/eliminar_proveedor.html', {'proveedor': proveedor})
